@@ -25,8 +25,22 @@ from utils.functions import search
 try:
     from credentials import ddb_json_headers as HEADERS
 except ImportError:
-    HEADERS = {}
-
+    HEADERS = {
+        'Accept': 'application/json;q=0.8',
+        'Host': 'www.dndbeyond.com',
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'
+    }
+"""
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Host': 'www.dndbeyond.com',
+        'TE': 'Trailers',
+        'Upgrade-Insecure-Requests': 1,
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0'
+    
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+"""
 log = logging.getLogger(__name__)
 
 API_BASE = "https://www.dndbeyond.com/character/"
@@ -134,6 +148,8 @@ class BeyondSheetParser(SheetLoaderABC):
         character = None
         async with aiohttp.ClientSession() as session:
             async with session.get(f"{API_BASE}{charId}/json", headers=HEADERS) as resp:
+                log.debug(f"{API_BASE}{charId}/json")
+                log.debug(f"HEADERS:{HEADERS}")
                 log.debug(f"DDB returned {resp.status}")
                 if resp.status == 200:
                     character = await resp.json()

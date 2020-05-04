@@ -31,6 +31,7 @@ class AdminUtils(commands.Cog):
         bot.loop.create_task(self.admin_pubsub())
         self.blacklisted_serv_ids = set()
         self.whitelisted_serv_ids = set()
+        self.bot.whitelisted = set()
 
         # pubsub stuff
         self._ps_cmd_map = {}  # set up in admin_pubsub()
@@ -39,15 +40,18 @@ class AdminUtils(commands.Cog):
     # ==== setup tasks ====
     async def load_admin(self):
         self.bot.muted = set(await self.bot.rdb.jget('muted', []))
+        self.bot.whitelisted = set(await self.bot.rdb.jget('bot-whitelist', []))
         self.blacklisted_serv_ids = set(await self.bot.rdb.jget('blacklist', []))
         self.whitelisted_serv_ids = set(await self.bot.rdb.jget('server-whitelist', []))
-
+        
         loglevels = await self.bot.rdb.jget('loglevels', {})
         for logger, level in loglevels.items():
             try:
                 logging.getLogger(logger).setLevel(level)
             except:
                 log.warning(f"Failed to reset loglevel of {logger}")
+
+        log.info(f"COMMAND_PUBSUB_CHANNEL: {COMMAND_PUBSUB_CHANNEL}")
 
     async def admin_pubsub(self):
         self._ps_cmd_map = {
@@ -75,6 +79,7 @@ class AdminUtils(commands.Cog):
         await self.bot.rdb.jset('blacklist', list(self.blacklisted_serv_ids))
         resp = await self.pscall("reload_lists")
         await self._send_replies(ctx, resp)
+
 
     @commands.command(hidden=True)
     @checks.is_owner()
@@ -119,6 +124,24 @@ class AdminUtils(commands.Cog):
     @checks.is_owner()
     async def leave_server(self, ctx, guild_id: int):
         resp = await self.pscall("leave", kwargs={"guild_id": guild_id}, expected_replies=1)
+        await self._send_replies(ctx, resp)
+
+    @commands.command(hidden=True)
+    @checks.is_owner()
+    async def botWhitelist(self, ctx, target: int):
+        """Whitelists a bot by ID."""
+        try:
+            target_user = await self.bot.fetch_user(target)
+        except NotFound:
+            target_user = "Not Found"
+        if target in self.bot.whitelisted:
+            self.bot.whitelisted.remove(target)
+            await ctx.send("{} ({}) bot un-Whitelisted.".format(target, target_user))
+        else:
+            self.bot.whitelisted.add(target)
+            await ctx.send("{} ({}) bot Whitelisted.".format(target, target_user))
+        await self.bot.rdb.jset('bot-whitelist', list(self.bot.whitelisted))
+        resp = await self.pscall("reload_lists")
         await self._send_replies(ctx, resp)
 
     @commands.command(hidden=True)
@@ -218,6 +241,7 @@ class AdminUtils(commands.Cog):
     async def _reload_lists(self):
         self.blacklisted_serv_ids = set(await self.bot.rdb.jget('blacklist', []))
         self.whitelisted_serv_ids = set(await self.bot.rdb.jget('server-whitelist', []))
+        self.bot.whitelisted = set(await self.bot.rdb.jget('bot-whitelist', []))
         self.bot.muted = set(await self.bot.rdb.jget('muted', []))
         return "OK"
 

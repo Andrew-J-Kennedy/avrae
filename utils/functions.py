@@ -603,7 +603,9 @@ def auth_and_chan(ctx):
     """Message check: same author and channel"""
 
     def chk(msg):
-        return msg.author == ctx.author and msg.channel == ctx.channel
+        log.info(f"msg.author.id:{msg.author.id}")
+        log.info(f"ctx.author.id:{ctx.author.id}")
+        return msg.author.id == ctx.author.id and msg.channel == ctx.channel
 
     return chk
 

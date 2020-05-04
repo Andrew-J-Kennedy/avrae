@@ -63,6 +63,7 @@ class Avrae(commands.AutoShardedBot):
         self.rdb = self.loop.run_until_complete(self.setup_rdb())
         self.prefixes = dict()
         self.muted = set()
+        self.whitelisted = set()
         self.cluster_id = 0
 
         if config.SENTRY_DSN is not None:
@@ -147,7 +148,8 @@ log_formatter = logging.Formatter('%(levelname)s:%(name)s: %(message)s')
 handler = logging.StreamHandler(sys.stdout)
 handler.setFormatter(log_formatter)
 logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+#logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 logger.addHandler(handler)
 log = logging.getLogger('bot')
 
@@ -250,6 +252,17 @@ async def on_command_error(ctx, error):
 async def on_message(message):
     if message.author.id in bot.muted:
         return
+    log.info(f"message.content:{message.content}")
+    log.info(f"message.author.id:{message.author.id}")
+    log.info(f"message:{message}")
+    if message.author.bot and message.author.id in bot.whitelisted:
+        log.info(f"isbot")
+        message.author.bot = False
+        if message.embeds:
+            log.info(f"embed alias:{message.embeds[0].fields[0].value}")
+            message.author.id = message.embeds[0].fields[0].value
+#           message.embeds = None
+    log.info(f"message.author.id:{message.author.id}")
     await bot.process_commands(message)
 
 

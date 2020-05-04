@@ -1200,9 +1200,16 @@ class InitTracker(commands.Cog):
     async def end(self, ctx, args=None):
         """Ends combat in the channel.
         __Valid Arguments__
-        -force - Forces an init to end, in case it's erroring."""
+        -force - Forces an init to end, in case it's erroring.
+        -yes   - Skips confirmation.
+        """
+        if args:
+            args = argparse(args)
 
-        to_end = await confirm(ctx, 'Are you sure you want to end combat? (Reply with yes/no)', True)
+        if args and 'yes' in args:
+            to_end = True
+        else:
+            to_end = await confirm(ctx, 'Are you sure you want to end combat? (Reply with yes/no)', True)
 
         if to_end is None:
             return await ctx.send('Timed out waiting for a response or invalid response.', delete_after=10)
@@ -1210,7 +1217,7 @@ class InitTracker(commands.Cog):
             return await ctx.send('OK, cancelling.', delete_after=10)
 
         msg = await ctx.send("OK, ending...")
-        if args != '-force':
+        if args and 'force' in args:
             combat = await Combat.from_ctx(ctx)
 
             try:
